@@ -1,0 +1,24 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Admin · SolarWave</title>
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#0b0f1a;color:#e8eefc;font:15px/1.5 Inter,Arial,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid #1f2740}header b{font-size:1.1rem}
+button,input,select{font:inherit;background:#151c30;color:#fff;border:1px solid #2a3556;border-radius:8px;padding:8px 12px}button{cursor:pointer}button:hover{background:#1e2848}
+.card{background:#10162a;border:1px solid #1f2740;border-radius:14px;padding:18px;margin:18px 24px}
+#login{max-width:380px;margin:12vh auto}#login input,#login button{display:block;width:100%;margin-top:12px}#login button{background:#ffc247;color:#1a1200;border:0;font-weight:600}#le{color:#ff7b7b}
+#stats{display:flex;gap:14px;flex-wrap:wrap;margin:18px 24px}.stat{flex:1;min-width:120px;background:#10162a;border:1px solid #1f2740;border-radius:14px;padding:14px}.stat b{font-size:1.8rem;display:block}.stat span{text-transform:capitalize;color:#8d9bc0;font-size:.85rem}
+.bar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}.bar input{flex:1;min-width:200px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left;padding:10px;border-bottom:1px solid #1f2740;vertical-align:top}th{color:#8d9bc0;font-weight:500}
+ul{list-style:none;padding:0}li{padding:6px 0}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.sub{color:#8d9bc0;margin:0 0 10px;font-size:.88rem}.cnt{color:#ffc247;font-size:.9rem;margin-left:6px}.bar select{min-width:150px}
+#pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:14px}#pg figure{margin:0;position:relative}#pg img{width:100%;height:100px;object-fit:cover;border-radius:8px}#pg button{position:absolute;top:4px;right:4px;padding:2px 8px}#pg small,#pst{color:#8d9bc0}
+</style></head><body>
+<div id="login" class="card"><h2>Admin login</h2><form id="lf"><input id="pw" type="password" placeholder="Password" required><button>Sign in</button><p id="le"></p></form></div>
+<div id="app" hidden>
+<header><b>SolarWave Admin</b><span><button id="csv">Export CSV</button> <button id="out">Log out</button></span></header>
+<div id="stats"></div>
+<section class="card"><div class="bar"><select id="fs"><option value="">All statuses</option><option>pending</option><option>confirmed</option><option>completed</option><option>cancelled</option></select><select id="fv"><option value="">All services</option><option>Full solar system</option><option>Solar panels only</option><option>Battery backup</option><option>Inverter upgrade</option><option>Wires &amp; cables</option><option>Maintenance / repair</option></select><input id="q" placeholder="Search name, phone, email, ref…"></div></section>
+<section class="card"><h3>Pickup orders <span class="cnt" id="cp1"></span></h3><p class="sub">Customers who will come and pick up themselves.</p>
+<div class="tw"><table><thead><tr><th>Date &amp; time</th><th>Customer</th><th>Service &amp; address</th><th>Ref</th><th>Status</th><th></th></tr></thead><tbody id="tbp"></tbody></table></div></section>
+<section class="card"><h3>Team visits <span class="cnt" id="cp2"></span></h3><p class="sub">We go to the customer's home: full system installs and deliver &amp; install orders.</p>
+<div class="tw"><table><thead><tr><th>Date &amp; time</th><th>Customer</th><th>Service &amp; address</th><th>Ref</th><th>Status</th><th></th></tr></thead><tbody id="tbh"></tbody></table></div></section></div>
+<script src="admin.js"></script></body></html>

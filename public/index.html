@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SolarWave Energy | Solar Panels, Batteries &amp; Installation in Texas</title>
+<meta name="description" content="SolarWave Energy designs, manufactures and installs solar panels, inverters and lithium batteries across Texas. Book your free survey online.">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="load">BUILDING 100,000 DOTS…</div>
+<canvas id="gl"></canvas>
+<canvas id="sky"></canvas>
+<header>
+  <a class="logo" href="#">SOLAR<b>WAVE</b></a>
+  <nav id="nav"><a href="#" data-work="about">About Us</a><a href="#" data-go="1">Panels</a><a href="#" data-go="2">Wires</a><a href="#" data-go="3">Inverters</a><a href="#" data-go="4">Batteries</a><a href="#" data-go="5">Installation</a><a href="#" data-go="6">Warranty</a></nav>
+  <a class="call" data-site="phoneLink"></a>
+  <a class="cta" href="#" data-book>Book Now</a>
+  <button id="burger" aria-label="Menu">☰</button>
+</header>
+<div id="steps"></div>
+<div id="hint">SCROLL TO EXPLORE ↓</div>
+<section id="intro"><canvas id="vapor"></canvas><h1 class="sr">SolarWave</h1></section>
+<div id="spacer"></div>
+<footer>
+  <div class="fg">
+    <div><div class="logo">SOLAR<b>WAVE</b></div><p>Solar panels, inverters and lithium batteries, designed, built and installed by one Texas team.</p></div>
+    <div><h4>CONTACT</h4><div class="ct"><div><h5>Address</h5><p data-site="address"></p><p data-site="city"></p></div><div><h5>Phone</h5><p><a data-site="phoneLink"></a></p></div><div><h5>Email</h5><p><a data-site="emailLink"></a></p></div></div></div>
+    <div><h4>EXPLORE</h4><a href="#" data-go="1">Solar panels</a><a href="#" data-go="2">Wires &amp; cables</a><a href="#" data-go="3">Inverters</a><a href="#" data-go="4">Batteries</a><a href="#" data-go="5">Installation</a><a href="#" data-go="6">Warranty</a><a href="#" data-book>Book now</a></div>
+    <div><h4>LICENSED &amp; INSURED</h4><p data-site="license"></p><p>Fully insured crews. Workmanship and product warranties on every system.</p></div>
+  </div>
+  <div class="fb"><span>© <span id="yr"></span> <span data-site="name"></span>. All rights reserved.</span><span><a href="#">Privacy Policy</a> · <a href="#">Terms</a> · <a href="/admin/">Staff</a></span></div>
+</footer>
+
+<div id="modal" class="ov" hidden><div class="mbox"><button class="x" aria-label="Close">✕</button><h3>Request your free survey</h3><p>Our team will contact you to finalize the date, day and time.</p><div id="book"></div></div></div>
+
+<div id="gal" class="ov" hidden><div class="mbox wide"><button class="x" aria-label="Close">✕</button><h3 id="gt"></h3><p>Real jobs from our crews.</p><div id="gg"></div></div></div>
+<div id="lb" hidden><img alt=""></div>
+
+<div id="choose" class="ov" hidden><div class="mbox"><button class="x" aria-label="Close">✕</button><h3>How would you like to book?</h3><p>Pick whatever is easiest. Every option books the same team visit.</p>
+<div class="opts"><button type="button" data-open="call"><b>📞 Book via Call</b><span>Talk to our AI assistant. It takes your details and books it for you.</span></button><button type="button" data-open="chat"><b>💬 Book via Message</b><span>Chat with our AI assistant instead of talking.</span></button><button type="button" data-open="form"><b>📝 Book via Form</b><span>Fill in a short form. Our team will contact you to finalize the date and time.</span></button></div></div></div>
+<aside id="chat" hidden><div class="ch"><b>SolarWave Assistant</b><button id="chatx" type="button" aria-label="Close chat">✕</button></div><div id="cmsgs"></div><form id="cform"><input id="cin" placeholder="Type your message…" autocomplete="off" maxlength="500"><button>Send</button></form></aside>
+<div id="callbox" hidden><div class="cc"><div class="av">☀</div><p class="cn">SolarWave Energy</p><p id="cst">Connecting…</p><div class="ccb"><button id="cmute" type="button">Mute</button><button id="cend" type="button" class="end">End call</button></div></div></div>
+<div id="toast" hidden></div>
+
+<template id="bookTpl">
+<form id="bookForm" novalidate>
+  <div class="row"><label>Full name *<input name="name" required autocomplete="name"></label><label>Phone *<input name="phone" type="tel" required autocomplete="tel"></label></div>
+  <div class="row"><label>Email *<input name="email" type="email" required autocomplete="email"></label>
+    <label>I'm interested in *<select name="service"><option>Full solar system</option><option>Solar panels only</option><option>Battery backup</option><option>Inverter upgrade</option><option>Wires &amp; cables</option><option>Maintenance / repair</option></select></label></div>
+  <label>Street address *<input name="address" required autocomplete="street-address"></label>
+  <label>City *<input name="city" required></label>
+  <div class="fulfil"><p>How would you like to get it? *</p><div class="slots"><label><input type="radio" name="fulfillment" value="Pickup"> I will pick it up myself</label><label><input type="radio" name="fulfillment" value="Delivery &amp; install"> Deliver and install it for me</label></div></div>
+  <label>Notes (roof type, questions…)<textarea name="notes" rows="3"></textarea></label>
+  <button class="btn" type="submit">Request this booking →</button><p id="bmsg"></p>
+</form>
+</template>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/js/content.js"></script>
+<script src="/js/story.js"></script>
+<script src="/js/work.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/booking-ai.js"></script>
+<script src="/js/vapor.js"></script>
+<script src="/js/sky.js"></script>
+</body>
+</html>
