@@ -28,7 +28,7 @@ header .cta,.wcta{padding:8px 18px;font-size:.8rem}
 .b{background:linear-gradient(95deg,var(--c2),var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent}
 .txt p{display:block;margin-top:18px;font-size:1rem;line-height:1.6;color:#cdd7ee;max-width:400px}
 .txt p::before{content:"";display:block;width:56px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--c1),var(--c2));margin-bottom:14px}
-.txt .btn{margin-top:22px;pointer-events:auto}
+.txt .btn{margin-top:22px;pointer-events:inherit}
 @media (min-aspect-ratio:11/10){
  .txt{top:50%;bottom:auto;translate:0 -50%;max-width:min(640px,50vw)}
  .txt h1{font-size:clamp(3rem,8.5vw,7.2rem)}
@@ -255,3 +255,220 @@ footer p,footer a{display:block;color:#aab6d3;font-size:.9rem;line-height:1.8;te
 .newchat:hover span{transform:rotate(180deg)}
 .newchat:active{transform:translateY(0) scale(.97)}
 .newchat:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+/* =====================================================================
+   MOBILE FIXES (sirf chhoti screen / mobile ke liye. Laptop ka design yahan se change nahi hota)
+   ===================================================================== */
+@media (max-width:900px){
+ html{overflow-x:clip}
+ /* header: logo | Book Now | menu */
+ header{gap:10px;padding:12px 4vw}header.sc{padding:10px 4vw}
+ .logo{font-size:1.45rem;letter-spacing:1.5px;white-space:nowrap}
+ header .cta{display:inline-block;margin-left:auto;padding:8px 16px;font-size:.78rem;white-space:nowrap}
+ #burger{margin-left:0;font-size:1.6rem;line-height:1;padding:4px 6px}
+ header.open nav{max-height:calc(100vh - 64px);max-height:calc(100dvh - 64px);overflow:auto;gap:4px;padding:12px 4vw 18px}
+ header.open nav a{font-size:1rem;opacity:1;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+
+ /* hero text: dynamic viewport height, taake browser ki address bar button ko na dhake */
+ .txt{bottom:9vh;bottom:9dvh}
+ #hint{bottom:4vh;bottom:4dvh}
+
+ /* explanation panel (About, Panels, Wires...): ab poora screen mein fit hota hai, kat'ta nahi */
+ .dtl{padding:76px 6vw 26px;padding-bottom:max(26px,env(safe-area-inset-bottom))}
+ .wrap{gap:14px!important}
+ .dtl.M .wrap{gap:14px}
+ .tag{font-size:.66rem;letter-spacing:2.5px;padding:5px 12px}
+ .dhead h2{font-size:clamp(1.9rem,8.4vw,2.9rem);margin:10px 0 8px}
+ .dhead p{font-size:.88rem;line-height:1.55}
+ .specs,.dtl.M .specs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .spec:last-child:nth-child(odd){grid-column:1/-1}
+ .spec{padding:12px 14px;border-radius:14px}
+ .spec b{font-size:1.7rem;line-height:1.1}
+ .spec span{display:block;font-size:.74rem;line-height:1.3;margin-top:2px}
+ .dbody .btn.wbtn{margin-top:14px;padding:10px 20px;font-size:.82rem}
+ .dtl.M .dbody{display:flex;flex-direction:column;align-items:center}
+
+ /* forms, pop-ups, chat */
+ .ov{padding:3vh 3vw}
+ .mbox{padding:22px 18px;max-height:94vh;max-height:94dvh;border-radius:16px}
+ .mbox h3{font-size:1.7rem;padding-right:34px}
+ .x{top:8px;right:8px;width:40px;height:40px;font-size:1.3rem}
+ #bookForm{gap:12px}
+ #bookForm input,#bookForm select,#bookForm textarea,#cin,.cf input,.cf select{font-size:16px} /* iPhone zoom na kare */
+ #gg{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}#gg img{height:120px}
+ #chat{right:8px;left:8px;bottom:8px;width:auto;height:min(560px,calc(100vh - 16px));height:min(560px,calc(100dvh - 16px))}
+ #toast{top:12px;right:12px;width:calc(100vw - 24px)}
+
+ /* footer */
+ footer{padding:48px 6vw 24px}
+ footer p,footer a{overflow-wrap:anywhere}
+ .fg{gap:28px}
+}
+@media (max-width:560px){
+ .fg{grid-template-columns:1fr}
+ .fb{flex-direction:column;gap:6px}
+}
+@media (max-width:900px) and (max-height:700px){
+ .dtl{padding-top:64px;padding-bottom:18px}
+ .wrap,.dtl.M .wrap{gap:10px!important}
+ .dhead h2{font-size:clamp(1.6rem,7.4vw,2.3rem);margin:8px 0 6px}
+ .dhead p{font-size:.8rem;line-height:1.45}
+ .spec{padding:8px 12px}.spec b{font-size:1.4rem}.spec span{font-size:.7rem}
+ .dbody .btn.wbtn{margin-top:10px;padding:8px 18px}
+ .txt h1{font-size:clamp(2.2rem,10.5vw,3.6rem)}
+ .txt p{margin-top:12px;font-size:.92rem;line-height:1.5}.txt p::before{margin-bottom:10px}
+ .txt .btn{margin-top:14px}
+}
+@media (max-width:380px){
+ .logo{font-size:1.3rem;letter-spacing:1px}
+ header .cta{padding:7px 12px;font-size:.74rem}
+}
+/* landscape phone (chhoti height, lambi width) */
+@media (max-height:520px) and (max-width:1000px){
+ header{padding:8px 4vw}header.sc{padding:6px 4vw}
+ .dtl{padding:56px 5vw 12px}
+ .wrap{grid-template-columns:1fr 1.1fr!important;gap:3vw!important;align-items:center}
+ .dtl.M .wrap{grid-template-columns:1fr 1.1fr!important;text-align:left}
+ .dtl.M .dhead p{margin:0}
+ .dhead h2{font-size:clamp(1.5rem,5vw,2.2rem);margin:6px 0 4px}
+ .dhead p{font-size:.78rem;line-height:1.4}
+ .spec{padding:7px 10px}.spec b{font-size:1.25rem}.spec span{font-size:.66rem}
+ .specs,.dtl.M .specs{gap:6px}
+ .dbody .btn.wbtn{margin-top:8px;padding:6px 16px;font-size:.76rem}
+ .dtl.M .dbody{align-items:stretch}
+ .txt{bottom:6vh;bottom:6dvh}
+ .txt h1{font-size:clamp(1.9rem,13vh,3.2rem)}
+ .txt p{margin-top:8px;font-size:.82rem;line-height:1.4}.txt p::before{margin-bottom:8px;width:40px}
+ .txt .btn{margin-top:10px;padding:8px 18px;font-size:.8rem}
+ .txt.M{bottom:5vh}
+ #hint{display:none}
+ .dtl .pts{display:none}
+}
+
+/* ===== showcase window ("Meet our crew", products, packages) on mobile ===== */
+/* photo ka frame laptop jaisa portrait (4:5) rakha, taake photo kate nahi aur sahi dikhe */
+@media (max-width:900px),(max-aspect-ratio:11/10){
+ .wc{top:11vh;height:min(42vh,480px);width:auto;max-width:88vw;aspect-ratio:4/5}
+ .wr2{top:calc(11vh + min(42vh,480px) + 14px);gap:8px;flex-wrap:nowrap}
+ .wp,.wn{top:calc(11vh + min(42vh,480px)*.82)}
+ /* price chhota (price + purani price ek line mein, left), option buttons chhote (right), dono screen ke andar */
+ .wprice{flex:0 0 auto}.wprice b,.wstat b{display:inline-block;font-size:1.9rem}.wprice s{font-size:1rem;margin-left:6px}
+ .wopt{flex:1 1 0;min-width:0}.wok{gap:5px;justify-content:flex-end}
+ .wok button{height:30px;padding:0 9px;font-size:.7rem;white-space:nowrap}
+}
+/* chhoti height wale phone (portrait): photo thodi chhoti, taake price aur title takrayen nahi */
+@media (max-height:700px) and (max-aspect-ratio:11/10){
+ .wc{top:10vh;height:37vh;width:auto}
+ .wr2{top:calc(10vh + 37vh + 12px)}
+ .wp,.wn{top:calc(10vh + 37vh*.82)}
+ .wl{bottom:8vh}
+ .wt{font-size:clamp(1.8rem,8.4vw,2.4rem)}
+ .wd{font-size:.8rem;line-height:1.45;margin-top:8px}
+ .wbk{margin-top:8px;padding:8px 18px;font-size:.82rem}
+ .wprice b,.wstat b{font-size:1.9rem}
+}
+/* landscape phone: photo left, text right */
+@media (max-height:520px) and (max-width:1000px) and (min-aspect-ratio:11/10){
+ .wtop{padding:8px 4vw 8px calc(4vw + 30px)}.wcta{display:none}
+ .wx{top:8px;left:4vw;width:22px;height:31px}
+ .wc{left:26vw;top:54px;width:auto;height:calc(100vh - 118px);height:calc(100dvh - 118px);aspect-ratio:4/5;transform:translate(-50%,0)}
+ .wr2{left:52vw;right:4vw;top:54px;width:auto;max-width:none;min-width:0;transform:none;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px}
+ .wprice b,.wstat b{font-size:1.9rem}
+ .wprice s{display:inline-block;font-size:1rem;margin-left:8px}
+ .wprice small,.wol,.wnote{display:none}
+ .wstat span{display:block;margin:0;font-size:.78rem;max-width:none}
+ .wopt{margin:0}.wok{gap:5px}.wok button{height:30px;padding:0 9px;font-size:.7rem}
+ .wl{left:52vw;right:4vw;top:126px;bottom:auto;width:auto;transform:none}
+ .wt{font-size:clamp(1.5rem,8vh,2.2rem)}
+ .wd{font-size:.78rem;line-height:1.45;margin-top:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+ .wsp{display:none}
+ .wbk{margin-top:10px;padding:8px 18px;font-size:.8rem}
+ .wp,.wn{top:50%;width:36px;height:36px;margin-top:-18px;font-size:1.1rem}.wp{left:6px}.wn{right:6px}
+ .wcount{left:4vw;bottom:10px}
+}
+
+/* ===== MOBILE ONLY (max-width:900px): full-screen menu, left-aligned, footer compact ===== */
+@media (max-width:900px){
+ /* menu khulne par poora screen dhak jaye (peeche ka hero text/header na dikhe), links left aligned */
+ header.open nav{position:absolute;top:0;left:0;right:0;height:100vh;height:100dvh;max-height:none;z-index:-1;background:#000;
+  align-items:flex-start;text-align:left;padding:78px 6vw 24px;gap:0;overflow:auto}
+ header.open nav a{display:block;width:100%;text-align:left;padding:14px 0}
+ /* footer: EXPLORE links do column mein (Batteries, Installation, Warranty right side), faltu jagah kam */
+ footer{padding:36px 6vw 18px}
+ .fg{gap:22px}
+ .fg>div:nth-child(3){display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-content:start}
+ .fg>div:nth-child(3) h4{grid-column:1/-1;margin-bottom:10px}
+ .fg>div:nth-child(3) a:nth-of-type(-n+3){grid-column:1}
+ .fg>div:nth-child(3) a:nth-of-type(n+4):nth-of-type(-n+6){grid-column:2}
+ .fg>div:nth-child(3) a:nth-of-type(1),.fg>div:nth-child(3) a:nth-of-type(4){grid-row:2}
+ .fg>div:nth-child(3) a:nth-of-type(2),.fg>div:nth-child(3) a:nth-of-type(5){grid-row:3}
+ .fg>div:nth-child(3) a:nth-of-type(3),.fg>div:nth-child(3) a:nth-of-type(6){grid-row:4}
+ .fg>div:nth-child(3) a:nth-of-type(7){grid-column:1;grid-row:5}
+ .fg h4{margin-bottom:10px}
+ .fb{margin-top:18px;padding-top:14px}
+}
+
+/* ===== MOBILE hero (pehli screen): heading upar, neeche wala text + button apni jagah ===== */
+@media (max-width:900px) and (max-aspect-ratio:11/10){
+ .txt.first{top:0;bottom:0;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:9vh;padding-bottom:9dvh}
+ .txt.first h1{position:absolute;top:41vh;top:41dvh;transform:translateY(-50%);left:0;right:0;font-size:14.4vw}
+ .txt.first .btn{align-self:flex-start}
+}
+
+/* ===== MOBILE showcase (About, Panels, Wires, Inverters, Batteries, Installation) =====
+   Price / option buttons / stat ab title ke RIGHT side mein (chhote), photo title ke bilkul upar tak bari.
+   --T = title block ka top. Photo, title aur price teeno isi se align hote hain. */
+@media (max-width:900px) and (max-aspect-ratio:11/10){
+ #work{--T:calc(89vh - 200px)}
+ .wc{top:11vh;height:calc(var(--T) - 11vh - 26px);max-height:110vw;width:auto;max-width:88vw;aspect-ratio:4/5}
+ .wp,.wn{top:calc(11vh + (var(--T) - 11vh - 26px)*.82)}
+ .wl{top:var(--T);bottom:auto}
+ .wr2{top:var(--T);left:auto;right:6vw;width:auto;max-width:56vw;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:8px;text-align:right}
+ .wprice{flex:none}.wprice b,.wstat b{font-size:1.6rem;line-height:1}.wprice s{font-size:.95rem}
+ .wstat{flex:none}.wstat span{max-width:92px;font-size:.7rem;margin-left:auto}
+ .wopt{flex:none;width:auto}.wok{flex-wrap:nowrap;gap:5px}
+ .wok button{height:28px;padding:0 7px;font-size:.66rem}
+}
+@media (max-width:900px) and (max-aspect-ratio:11/10) and (max-height:700px){
+ #work{--T:calc(92vh - 175px)}
+ .wc{top:10vh;height:calc(var(--T) - 10vh - 24px)}
+ .wp,.wn{top:calc(10vh + (var(--T) - 10vh - 24px)*.82)}
+}
+
+/* hero buttons: sirf tab click hon jab wo screen par dikh rahe hon (pehle chhupe huye bhi click ho jate the) */
+.txt .btn.wbtn{pointer-events:inherit}
+
+/* ===== "How would you like to book?" pop-up: site ke style mein (gold / green / blue, glow, icons) ===== */
+#choose .chooseBox{width:min(560px,100%);padding:36px 30px 28px;overflow:hidden;
+ background:radial-gradient(ellipse 80% 60% at 0% 0%,rgba(255,194,71,.16),transparent 60%),radial-gradient(ellipse 70% 55% at 100% 100%,rgba(95,168,255,.12),transparent 60%),#0b1020;
+ border:1px solid rgba(255,194,71,.25);box-shadow:0 30px 80px -10px rgba(0,0,0,.75),0 0 70px rgba(255,194,71,.08)}
+.ctag{display:inline-block;font-size:.68rem;letter-spacing:3px;color:#ffc247;border:1px solid #ffc247;padding:6px 14px;border-radius:30px}
+#choose h3{font-size:2.5rem;line-height:1;margin:16px 0 8px;letter-spacing:1.5px}
+#choose .mbox>p{margin-bottom:22px;line-height:1.5}
+#choose .opts{gap:12px}
+#choose .opts button{position:relative;display:flex;align-items:center;gap:16px;overflow:hidden;padding:16px 18px;border-radius:18px;
+ background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);transition:transform .25s,border-color .25s,box-shadow .25s}
+#choose .opts button::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--c),transparent 70%);opacity:0;transition:opacity .3s}
+#choose .opts button>*{position:relative}
+#choose .opts button:hover,#choose .opts button:focus-visible{transform:translateY(-2px);border-color:var(--c);background:rgba(255,255,255,.05);box-shadow:0 14px 34px -14px var(--c);outline:none}
+#choose .opts button:hover::before,#choose .opts button:focus-visible::before{opacity:.13}
+#choose .oi{flex:none;width:50px;height:50px;border-radius:15px;display:grid;place-items:center;background:var(--c);box-shadow:0 8px 22px -6px var(--c)}
+#choose .ot{display:block;min-width:0}
+#choose .ot b{display:block;font-size:1.08rem;margin-bottom:3px}
+#choose .ot span{display:block;color:#aab6d3;font-size:.85rem;line-height:1.45}
+#choose .oa{margin-left:auto;flex:none;font-style:normal;font-size:1.5rem;color:var(--c);transition:transform .25s}
+#choose .opts button:hover .oa{transform:translateX(5px)}
+@keyframes chin{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+#choose:not([hidden]) .chooseBox{animation:chin .35s cubic-bezier(.2,.9,.2,1)}
+#choose:not([hidden]) .opts button{animation:chin .45s cubic-bezier(.2,.9,.2,1) both}
+#choose:not([hidden]) .opts button:nth-child(2){animation-delay:.07s}
+#choose:not([hidden]) .opts button:nth-child(3){animation-delay:.14s}
+@media (prefers-reduced-motion:reduce){#choose:not([hidden]) .chooseBox,#choose:not([hidden]) .opts button{animation:none}}
+@media (max-width:560px){
+ #choose .chooseBox{padding:28px 18px 20px}
+ #choose h3{font-size:2rem}
+ #choose .opts button{padding:14px;gap:12px}
+ #choose .oi{width:42px;height:42px;border-radius:13px}
+ #choose .ot span{font-size:.8rem}
+ #choose .oa{display:none}
+}

@@ -1,9 +1,11 @@
 const $=s=>document.querySelector(s),Rn=(a,b)=>a+Math.random()*(b-a),cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),sm=(a,b,x)=>{x=cl((x-a)/(b-a));return x*x*(3-2*x)};
 const N=90000;
+const MOB=innerWidth<=900||innerWidth<=innerHeight*1.1; // mobile UI (header mein 3 lines wala menu) = true
+const FW=MOB?0:1; // 1 = laptop (purana 3/4 angle), 0 = mobile (shape bilkul seedha, face forward)
 
 // ---------- helpers ----------
 function dir(){const u=Rn(-1,1),a=Rn(0,6.2832),s=Math.sqrt(1-u*u);return[s*Math.cos(a),u,s*Math.sin(a)]}
-function rot([x,y,z],rx,ry){let c=Math.cos(rx),s=Math.sin(rx),y2=y*c-z*s,z2=y*s+z*c;y=y2;z=z2;c=Math.cos(ry);s=Math.sin(ry);return[x*c+z*s,y,-x*s+z*c]}
+function rot([x,y,z],rx,ry){rx*=FW;ry*=FW;let c=Math.cos(rx),s=Math.sin(rx),y2=y*c-z*s,z2=y*s+z*c;y=y2;z=z2;c=Math.cos(ry);s=Math.sin(ry);return[x*c+z*s,y,-x*s+z*c]}
 function build(fn){const a=new Float32Array(N*3),t=new Float32Array(N);for(let i=0;i<N;i++){const p=fn(i);a[i*3]=p[0];a[i*3+1]=p[1];a[i*3+2]=p[2];t[i]=p[3]||0}return[a,t]}
 const T=(p,t)=>{p[3]=t;return p};
 function boxSurf(w,h,d){const f=Math.random()*3|0,s=Math.random()<.5?-.5:.5,a=Rn(-.5,.5),b=Rn(-.5,.5);return f==0?[s*w,a*h,b*d]:f==1?[a*w,s*h,b*d]:[a*w,b*h,s*d]}
@@ -173,11 +175,11 @@ addEventListener('resize',resize);resize();
 const ST=window.STORY,hdr=$('header'),SP=$('#spacer'),IN={offsetHeight:0}; // the intro is a one-time overlay now, it takes no space in the page
 
 const LAY={R:[1.9,0,1],L:[-1.9,0,1],M:[0,.75,.82]},OBJ=['R','L','M','R','L','M','R','L'],TS={R:'L',L:'R',M:'M'};
-const lay=(i,w)=>w?LAY[OBJ[Math.min(i,K-1)]]:[0,1.2,.75];
+const lay=(i,w)=>w?LAY[OBJ[Math.min(i,K-1)]]:i===0?[.4*3.26*cam.aspect,.72,Math.min(.41,.56*cam.aspect)]:[0,1.4,.5]; // mobile: chhoti; pehli screen par sun chhota aur right-beech mein
 const WL={about:'Meet our crew',panels:'Explore Solar Panels',wires:'Explore Wires &amp; Cables',inverters:'Explore Inverters',batteries:'Explore Batteries',installation:'See our installation packages'};
 const txt=[],det=[],mk=(t,c)=>{const e=document.createElement(t);e.className=c;return e};
 ST.forEach((s,i)=>{
-  const P=s.pal,side=TS[OBJ[i]],d=mk('div','txt '+side),Ls=s.h[2].split('<br>');
+  const P=s.pal,side=TS[OBJ[i]],d=mk('div','txt '+side+(i===0?' first':'')),Ls=s.h[2].split('<br>');
   d.style.cssText=`--c1:${P[0]};--c2:${P[1]};--c3:${P[2]}`;
   d.innerHTML=`<h1><span class="ln a ${s.h[1]}" style="--m:70">${s.h[0]}</span><br>${Ls.map((x,j)=>`<span class="ln b" style="--m:${130+j*60}">${x}</span>`).join('<br>')}</h1><p class="ln" style="--m:230">${s.h[3]}</p>${s.work?`<button class="btn wbtn ln" style="--m:270" data-work="${s.work}">${WL[s.work]} →</button>`:''}${s.btn?`<a class="btn ln" style="--m:300" href="#" data-book>${s.btn} →</a>`:''}`;
   document.body.appendChild(d);txt.push(d);
@@ -193,7 +195,8 @@ addEventListener('mousemove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHe
 const stEl=$('#steps');ST.forEach(()=>stEl.appendChild(document.createElement('i')));const st=[...stEl.children];
 setTimeout(()=>{$('#load').style.opacity=0;setTimeout(()=>$('#load').remove(),900)},300);
 
-let lt=0,ut=0;const SNAP=14; // SNAP jitna bada, scroll ke saath animation utni foran chalti hai
+let lt=0,ut=0,sw=0,idleT=0,lastScr=-9;const SNAP=14;
+const touchScr=()=>{lastScr=performance.now()*.001};addEventListener('scroll',touchScr,{passive:true});addEventListener('touchmove',touchScr,{passive:true});addEventListener('wheel',touchScr,{passive:true}); // SNAP jitna bada, scroll ke saath animation utni foran chalti hai
 (function loop(t){
   requestAnimationFrame(loop);t*=.001;
   const dt=Math.min(.05,Math.max(0,t-lt));lt=t;
@@ -209,7 +212,12 @@ let lt=0,ut=0;const SNAP=14; // SNAP jitna bada, scroll ke saath animation utni 
   pts.position.x=(la[0]+(lb[0]-la[0])*w)*k;
   pts.position.y=(la[1]+(lb[1]-la[1])*w)*k;
   pts.scale.setScalar(1+(la[2]+(lb[2]-la[2])*w-1)*k);
-  pts.rotation.y=(Math.sin(t*.35)*.5+mx*.5)*k;pts.rotation.x=my*.25*k;
+  // swivel sirf tab jab scroll ruka ho; scroll shuru hote hi shape seedhi (face forward) ho jati hai, side se start nahi hoti
+  const idle=gap<.02&&(t-lastScr)>.5; // scroll ko ruke 0.5s ho gaya ho tabhi swivel; scroll ke dauran shape hamesha seedhi
+  if(idle)idleT+=dt;else idleT=0;
+  const swT=idle?Math.sin(idleT*.35)*.5*cl((idleT-.3)/1.2):0;
+  sw+=(swT-sw)*(1-Math.exp(-dt*(idle?4:10)));
+  pts.rotation.y=(sw*(MOB?.8:1)+(MOB?0:mx*.5))*k;pts.rotation.x=MOB?0:my*.25*k; // mobile: seedha start, phir halka swivel
   stars.rotation.y=t*.01;
   const fv=cl(1-(scrollY-IN.offsetHeight-(SP.offsetHeight-innerHeight))/(innerHeight*.35));
   txt.forEach((e,i)=>{const o=cl(1-Math.max(0,Math.abs(p-i+.025)-.09)*9)*fv*ia;
