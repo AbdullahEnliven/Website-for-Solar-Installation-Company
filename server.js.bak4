@@ -1,0 +1,121 @@
+require('dotenv').config();
+const path = require('path');
+const crypto = require('crypto');
+const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const { pool, init } = require('./db');
+const { validate, createBooking, DATE_TAKEN } = require('./booking-core');
+
+const app = express();
+app.set('trust proxy', 1); // Railway sits behind a proxy
+const SECRET = process.env.JWT_SECRET || (console.warn('JWT_SECRET not set: using a temporary one'), crypto.randomBytes(32).toString('hex'));
+const TZ = process.env.BUSINESS_TZ || 'America/Chicago';
+const SERVICES = ['Full solar system', 'Solar panels only', 'Battery backup', 'Inverter upgrade', 'Maintenance / repair'];
+const SLOTS = ['8am-12pm', '12pm-4pm'];
+
+app.use(helmet({ contentSecurityPolicy: { reportOnly: true, directives: {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'", "'wasm-unsafe-eval'", 'blob:', 'https://cdnjs.cloudflare.com', 'https://*.daily.co', 'https://*.vapi.ai'],
+  styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+  imgSrc: ["'self'", 'data:', 'blob:', 'https:'], connectSrc: ["'self'", 'https:', 'wss:', 'blob:', 'data:'],
+  workerSrc: ["'self'", 'blob:'], mediaSrc: ["'self'", 'blob:', 'mediastream:', 'data:', 'https:'],
+  frameSrc: ["'self'", 'blob:', 'https://*.daily.co'], childSrc: ["'self'", 'blob:', 'https://*.daily.co'], objectSrc: ["'none'"], upgradeInsecureRequests: null } } }));
+app.use(express.json({ limit: '50kb' }));
+app.use(cookieParser());
+app.use('/admin', (_q, res, next) => { res.set('X-Robots-Tag', 'noindex'); next(); });
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/health', (_q, res) => res.send('ok'));
+
+const wrap = fn => (req, res, next) => fn(req, res, next).catch(next);
+const clean = (v, n = 200) => String(v ?? '').trim().slice(0, n);
+const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
+const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+const addDays = (s, n) => new Date(Date.parse(s + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const capacity = async () => +(await pool.query("SELECT value FROM settings WHERE key='daily_capacity'")).rows[0].value;
+
+// ---------- public API ----------
+app.get('/api/availability', wrap(async (_q, res) => {
+  const from = addDays(today(), 1), to = addDays(today(), 120), cap = await capacity();
+  const [b, x] = await Promise.all([
+    pool.query("SELECT visit_date d, COUNT(*)::int c FROM bookings WHERE visit_date BETWEEN $1 AND $2 AND status<>'cancelled' GROUP BY 1", [from, to]),
+    pool.query('SELECT day FROM blocked_dates WHERE day BETWEEN $1 AND $2', [from, to])]);
+  res.json({ from, to, full: b.rows.filter(r => r.c >= cap).map(r => r.d), blocked: x.rows.map(r => r.day) });
+}));
+
+const bookLimiter = rateLimit({ windowMs: 3600e3, limit: 10, standardHeaders: true, legacyHeaders: false });
+app.post('/api/bookings', bookLimiter, wrap(async (req, res) => {
+  const v = validate(req.body || {});
+  if (v.error) return res.status(400).json({ error: v.error });
+  const r = await createBooking(v.d, 'FORM');
+  if (!r.ok) return res.status(409).json({ error: DATE_TAKEN });
+  res.json({ ok: true, ref: r.ref });
+}));
+app.use('/api', require('./ai')); // AI chat + AI voice booking
+
+// ---------- admin API ----------
+const loginLimiter = rateLimit({ windowMs: 15 * 60e3, limit: 10, standardHeaders: true, legacyHeaders: false });
+app.post('/api/admin/login', loginLimiter, wrap(async (req, res) => {
+  const given = Buffer.from(String(req.body?.password || '')), real = Buffer.from(String(process.env.ADMIN_PASSWORD || ''));
+  if (!real.length || given.length !== real.length || !crypto.timingSafeEqual(given, real)) return res.status(401).json({ error: 'Wrong password' });
+  res.cookie('adm', jwt.sign({ admin: true }, SECRET, { expiresIn: '12h' }), { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', maxAge: 12 * 3600e3 });
+  res.json({ ok: true });
+}));
+app.post('/api/admin/logout', (_q, res) => { res.clearCookie('adm'); res.json({ ok: true }); });
+const auth = (req, res, next) => { try { jwt.verify(req.cookies.adm, SECRET); next(); } catch { res.status(401).json({ error: 'Login required' }); } };
+
+app.get('/api/admin/bookings', auth, wrap(async (_q, res) => {
+  res.json((await pool.query('SELECT * FROM bookings ORDER BY visit_date DESC, id DESC LIMIT 1000')).rows);
+}));
+app.patch('/api/admin/bookings/:id', auth, wrap(async (req, res) => {
+  if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Bad status' });
+  await pool.query('UPDATE bookings SET status=$1 WHERE id=$2', [req.body.status, +req.params.id]); res.json({ ok: true });
+}));
+app.delete('/api/admin/bookings/:id', auth, wrap(async (req, res) => {
+  await pool.query('DELETE FROM bookings WHERE id=$1', [+req.params.id]); res.json({ ok: true });
+}));
+app.get('/api/admin/settings', auth, wrap(async (_q, res) => {
+  res.json({ capacity: await capacity(), blocked: (await pool.query('SELECT day, reason FROM blocked_dates ORDER BY day')).rows });
+}));
+app.put('/api/admin/capacity', auth, wrap(async (req, res) => {
+  const v = Math.round(+req.body.value); if (!(v >= 1 && v <= 50)) return res.status(400).json({ error: 'Capacity must be 1-50' });
+  await pool.query("UPDATE settings SET value=$1 WHERE key='daily_capacity'", [String(v)]); res.json({ ok: true });
+}));
+app.post('/api/admin/blocked', auth, wrap(async (req, res) => {
+  if (!isDate(req.body.day)) return res.status(400).json({ error: 'Bad date' });
+  await pool.query('INSERT INTO blocked_dates(day,reason) VALUES($1,$2) ON CONFLICT (day) DO UPDATE SET reason=$2', [req.body.day, clean(req.body.reason, 120)]); res.json({ ok: true });
+}));
+app.delete('/api/admin/blocked/:day', auth, wrap(async (req, res) => {
+  if (!isDate(req.params.day)) return res.status(400).json({ error: 'Bad date' });
+  await pool.query('DELETE FROM blocked_dates WHERE day=$1', [req.params.day]); res.json({ ok: true });
+}));
+
+// ---------- work photos (stored in PostgreSQL, so they survive Railway redeploys) ----------
+const CATS = ['panels', 'wires', 'inverters', 'batteries', 'installation'];
+const magic = b => (b[0] === 0xff && b[1] === 0xd8) || (b[0] === 0x89 && b[1] === 0x50) || b.slice(0, 4).toString() === 'RIFF';
+app.get('/api/photos', wrap(async (req, res) => {
+  res.json((await pool.query('SELECT id, caption FROM work_photos WHERE category=$1 ORDER BY id DESC LIMIT 60', [clean(req.query.category, 30)])).rows);
+}));
+app.get('/api/photos/:id/img', wrap(async (req, res) => {
+  const r = await pool.query('SELECT mime, data FROM work_photos WHERE id=$1', [+req.params.id || 0]);
+  if (!r.rows[0]) return res.sendStatus(404);
+  res.set({ 'Content-Type': r.rows[0].mime, 'Cache-Control': 'public, max-age=31536000, immutable' }).send(r.rows[0].data);
+}));
+app.get('/api/admin/photos', auth, wrap(async (_q, res) => {
+  res.json((await pool.query('SELECT id, category, caption FROM work_photos ORDER BY category, id DESC')).rows);
+}));
+app.post('/api/admin/photos', auth, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '6mb' }), wrap(async (req, res) => {
+  const cat = clean(req.query.category, 30);
+  if (!CATS.includes(cat) || !Buffer.isBuffer(req.body) || req.body.length < 100 || !magic(req.body)) return res.status(400).json({ error: 'Bad category or image' });
+  await pool.query('INSERT INTO work_photos(category,caption,mime,data) VALUES($1,$2,$3,$4)', [cat, clean(req.query.caption, 120), req.headers['content-type'].split(';')[0], req.body]);
+  res.json({ ok: true });
+}));
+app.delete('/api/admin/photos/:id', auth, wrap(async (req, res) => {
+  await pool.query('DELETE FROM work_photos WHERE id=$1', [+req.params.id || 0]); res.json({ ok: true });
+}));
+
+app.use((e, _q, res, _n) => { console.error(e); res.status(500).json({ error: 'Server error' }); });
+const port = process.env.PORT || 3000;
+init().then(() => app.listen(port, '0.0.0.0', () => console.log('Running on port ' + port))).catch(e => { console.error(e); process.exit(1); });

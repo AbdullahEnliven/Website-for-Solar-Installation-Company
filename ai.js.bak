@@ -1,0 +1,152 @@
+// AI booking: text chat (Groq) and voice call (Vapi). Both use the same booking rules as the web form.
+const express = require('express');
+const rateLimit = require('express-rate-limit');
+const { pool } = require('./db');
+const core = require('./booking-core');
+
+const router = express.Router();
+const SERVICE_MAP = { FULL_SYSTEM: 'Full solar system', PANELS: 'Solar panels only', BATTERY: 'Battery backup', INVERTER: 'Inverter upgrade', MAINTENANCE: 'Maintenance / repair' };
+const wrap = fn => (req, res, next) => fn(req, res, next).catch(next);
+
+const FACTS = `SolarWave Energy is a solar company in Austin, Texas (phone (512) 555-0142). Our team visits homes Monday to Saturday, closed Sundays, in a morning window (8 AM to 12 PM) or an afternoon window (12 PM to 4 PM). Products: 400 W monocrystalline solar panels (21.8% efficiency), 10 AWG UV-resistant PV wiring, 7.6 kW hybrid inverters with Wi-Fi monitoring, and 10 kWh lithium iron phosphate battery modules (stackable up to 40 kWh, 6,000 cycles). Installation is done by our own licensed crews, usually 1 to 2 days on site, with a free home survey and written quote. Every panel, battery and installation has a 5-year warranty, plus 24/7 system monitoring.`;
+
+function dateTable() {
+  const t = core.today();
+  return Array.from({ length: 7 }, (_, i) => { const d = core.addDays(t, i); return `${core.weekday(d)}=${d}`; }).join(', ');
+}
+const header = () => `Today is ${core.weekday(core.today())}, ${core.today()}. The next 7 days are: ${dateTable()}. Use this table to convert any day name; never work out a weekday yourself. A day given without a year means the next one coming up.`;
+
+// ---------------------------------------------------------------- chat (Groq)
+const WD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+function resolveRef(text) {
+  const l = text.toLowerCase(), t = core.today();
+  const iso = l.match(/\b(\d{4}-\d{2}-\d{2})\b/); if (iso) return iso[1];
+  if (/\btomorrow\b/.test(l)) return core.addDays(t, 1);
+  if (/\btoday\b/.test(l)) return t;
+  const md = l.match(new RegExp('\\b(' + MON.join('|') + ')[a-z]*\\.?\\s+(\\d{1,2})\\b'));
+  if (md) { const y = +t.slice(0, 4), m = MON.indexOf(md[1]) + 1, day = +md[2]; let s = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`; if (core.isDate(s) && s < t) s = `${y + 1}${s.slice(4)}`; if (core.isDate(s)) return s; }
+  for (let i = 0; i < 7; i++) if (new RegExp('\\b' + WD[i] + '\\b').test(l)) { let dl = (i - core.dow(t) + 7) % 7; if (dl === 0) dl = 7; return core.addDays(t, dl); }
+  return null;
+}
+// The small model is unreliable at remembering the day the visitor chose, so re-read it from their messages.
+const requestedDate = msgs => { for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i].role === 'user') { const r = resolveRef(msgs[i].content); if (r) return r; } return null; };
+
+const CHAT_TOOLS = [{ type: 'function', function: { name: 'check_availability', description: 'Check the first bookable day on or after the visitor\'s preferred day for a team visit.',
+  parameters: { type: 'object', properties: { date: { type: 'string', description: 'Preferred date, YYYY-MM-DD' } }, required: ['date'] } } }];
+
+async function chat(msgs) {
+  const fail = { ok: false, reply: 'Sorry, I am having trouble connecting right now. Please try again in a moment, or use the booking form.' };
+  if (!process.env.GROQ_API_KEY) return { ok: false, reply: 'Chat is not set up yet. Please use the booking form.' };
+  try {
+    const system = `You are the booking assistant for SolarWave Energy, chatting with a website visitor. Keep replies short, friendly and conversational (1 to 3 sentences).\n${FACTS}\n${header()}\nYou have one tool, check_availability. Call it as soon as the visitor names or implies a day for the team visit (a weekday, "tomorrow" or a date). If they want to book but have not given a day, ask which day works. Never guess a date.\nAfter the tool runs, a booking form appears in the chat automatically, so do NOT ask for name, phone, email or address in chat.\nNever invent prices, discounts or specs that are not listed above; for pricing, say the free home survey gives a written quote. This system sends no confirmation emails or reminders, never promise one.`;
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST',
+      headers: { Authorization: 'Bearer ' + process.env.GROQ_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'openai/gpt-oss-20b', messages: [{ role: 'system', content: system }, ...msgs], tools: CHAT_TOOLS, tool_choice: 'auto', temperature: 0.3, max_tokens: 400 }) });
+    if (!r.ok) throw new Error('Groq ' + r.status + ' ' + (await r.text()).slice(0, 200));
+    const m = (await r.json()).choices?.[0]?.message || {};
+    const call = (m.tool_calls || []).find(c => c.function?.name === 'check_availability');
+    if (!call) return { ok: true, reply: m.content || 'Sorry, could you say that again?' };
+    let args = {}; try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
+    const want = requestedDate(msgs) || (core.isDate(args.date) ? args.date : core.addDays(core.today(), 1));
+    const o = await core.findOpen(want);
+    if (!o) return { ok: true, reply: 'We do not have an opening in the next few months right now. Please call us on (512) 555-0142.' };
+    const dateFormatted = core.fmtDate(o.date);
+    return { ok: true, reply: `**${dateFormatted}** is open${o.reason ? ` (${o.reason})` : ''}. Pick morning (8 AM to 12 PM) or afternoon (12 PM to 4 PM) and fill in your details below to book the visit.`, bookingOffer: { date: o.date, dateFormatted } };
+  } catch (e) { console.error('[chat]', e.message); return fail; }
+}
+
+const chatLimiter = rateLimit({ windowMs: 60e3, limit: 20, standardHeaders: true, legacyHeaders: false });
+const bookLimiter = rateLimit({ windowMs: 3600e3, limit: 10, standardHeaders: true, legacyHeaders: false });
+router.post('/chat', chatLimiter, wrap(async (req, res) => {
+  const msgs = (Array.isArray(req.body?.messages) ? req.body.messages : []).filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-20).map(m => ({ role: m.role, content: m.content.slice(0, 800) }));
+  if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return res.status(400).json({ ok: false, reply: 'Please type a message.' });
+  res.json(await chat(msgs));
+}));
+router.post('/chat/book', bookLimiter, wrap(async (req, res) => {
+  const v = core.validate(req.body || {});
+  if (v.error) return res.status(400).json({ ok: false, error: v.error });
+  const x = await core.createBooking(v.d, 'CHAT');
+  if (!x.ok) return res.status(409).json({ ok: false, error: core.DATE_TAKEN });
+  res.json({ ok: true, ref: x.ref, dateFormatted: core.fmtDate(v.d.date), slot: v.d.slot });
+}));
+
+// ---------------------------------------------------------------- voice (Vapi)
+const ACCTS = [1, 2, 3].map(n => ({ key: 'account' + n, publicKey: process.env['VAPI_PUBLIC_KEY_' + n] })).filter(a => a.publicKey);
+const LIMIT = +process.env.VAPI_MINUTES_LIMIT || 30;
+async function pickAccount(excl) {
+  for (const a of ACCTS) {
+    if (excl.includes(a.key)) continue;
+    const u = await pool.query('SELECT minutes_used FROM vapi_usage WHERE account_key=$1', [a.key]);
+    if ((u.rows[0]?.minutes_used || 0) < LIMIT) return a;
+  }
+  return null;
+}
+const recordUsage = (key, min) => pool.query('INSERT INTO vapi_usage(account_key,minutes_used) VALUES($1,$2) ON CONFLICT (account_key) DO UPDATE SET minutes_used=vapi_usage.minutes_used+$2', [key, min]);
+
+function buildAssistant(baseUrl, key) {
+  const prompt = `${header()}\n\nYou are the booking assistant for SolarWave Energy, speaking to someone on a voice call. Keep every reply to one or two short sentences, this is speech, not text.\n${FACTS}\n\nFollow these steps in order. Ask one thing at a time and wait for the answer.\n1. GREETING is already given. If they open with a question, answer it briefly, then continue.\n2. SERVICE: full solar system (FULL_SYSTEM), solar panels only (PANELS), battery backup (BATTERY), inverter upgrade (INVERTER), or maintenance and repair (MAINTENANCE).\n3. DATE: ask which day they would like our team to visit. Call check_availability and offer the date it returns. Then ask whether they prefer the morning (8 to 12) or afternoon (12 to 4). Only move on once they accept a date and a window. If they say no, ask for another day and check again.\n4. DETAILS, one at a time: full name, phone number, email address, street address, city, state (use the two-letter code, for example TX) and ZIP code. Read the phone number and email back to check them.\n5. READ BACK everything: service, date, window, name, phone, email, full address. Then ask exactly: "Shall I go ahead and book this?"\n6. BOOK only after a clear yes: call create_booking with confirmed set to true. If they change something, update it, check availability again and read back a fresh summary.\n7. CONFIRM that it is booked, repeating the date and window.\n8. ANYTHING ELSE? If not, thank them warmly and say goodbye to end the call.\n\nNever invent a price: the free home survey gives a written quote. Never say you will send an email, confirmation or reminder; this system sends none.\nDATES: tool results include dateFormatted with the weekday already worked out. Say that text exactly. If a result includes a reason field, the date moved, so say why when you offer it.\nFAILURES: if a tool returns success false, say plainly it did not go through and ask them to use the booking form on the website. Never say it is booked unless create_booking returned success true.`;
+  const str = d => ({ type: 'string', description: d });
+  return {
+    name: 'SolarWave Energy',
+    firstMessage: 'Hi, thanks for calling SolarWave Energy! Are you interested in a full solar system, panels, battery backup, or something else?',
+    endCallPhrases: ['goodbye', 'bye now', 'have a great day. goodbye'], maxDurationSeconds: 300, silenceTimeoutSeconds: 30,
+    serverUrl: `${baseUrl}/api/voice/webhook?account=${encodeURIComponent(key)}&k=${encodeURIComponent(process.env.VOICE_SECRET || '')}`,
+    serverMessages: ['tool-calls'],
+    transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en-US' },
+    voice: { provider: 'vapi', voiceId: 'Elliot' },
+    model: { provider: 'openai', model: 'gpt-4o-mini', temperature: 0.3, maxTokens: 250, messages: [{ role: 'system', content: prompt }], tools: [
+      { type: 'function', function: { name: 'check_availability', description: 'Get the first bookable day on or after the caller\'s preferred day.', parameters: { type: 'object', properties: { date: str('Preferred date, YYYY-MM-DD') }, required: ['date'] } } },
+      { type: 'function', function: { name: 'create_booking', description: 'Create the booking. Only call after reading all details aloud and hearing the caller agree.', parameters: { type: 'object', properties: {
+        name: str('Full name'), phone: str('Phone number'), email: str('Email address'), address: str('Street address'), city: str('City'), state: str('Two-letter state code'), zip: str('ZIP code'),
+        service: { type: 'string', enum: Object.keys(SERVICE_MAP) }, date: str('Agreed date, YYYY-MM-DD'), slot: { type: 'string', enum: ['MORNING', 'AFTERNOON'] },
+        confirmed: { type: 'boolean', description: 'True only if you read the full details aloud and the caller agreed.' } },
+        required: ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'service', 'date', 'slot', 'confirmed'] } } }] } };
+}
+
+async function runTool(name, a) {
+  try {
+    if (name === 'check_availability') {
+      const o = await core.findOpen(core.isDate(a.date) ? a.date : core.addDays(core.today(), 1));
+      if (!o) return { success: false, error: 'No openings in the next few months.' };
+      return { success: true, date: o.date, dateFormatted: core.fmtDate(o.date), reason: o.reason || undefined, windows: 'morning (8 AM to 12 PM) or afternoon (12 PM to 4 PM)' };
+    }
+    if (name === 'create_booking') {
+      if (a.confirmed !== true && a.confirmed !== 'true') return { success: false, error: 'Not confirmed. Do not book. Read the full summary aloud and ask "Shall I go ahead and book this?" first.' };
+      const v = core.validate({ ...a, service: SERVICE_MAP[a.service] || a.service, slot: a.slot === 'AFTERNOON' ? '12pm-4pm' : '8am-12pm' });
+      if (v.error) return { success: false, error: v.error + ' Ask the caller to repeat the details that look wrong (phone needs 10 digits, ZIP 5 digits, state two letters).' };
+      const x = await core.createBooking(v.d, 'VOICE');
+      if (!x.ok) return { success: false, error: core.DATE_TAKEN };
+      return { success: true, reference: x.ref, dateFormatted: core.fmtDate(v.d.date), window: v.d.slot };
+    }
+    return { success: false, error: 'Unknown tool' };
+  } catch (e) { console.error('[voice tool]', name, e); return { success: false, error: 'Tool failed' }; }
+}
+const parseArgs = raw => { if (typeof raw === 'string') { try { return JSON.parse(raw || '{}'); } catch { return {}; } } return raw || {}; };
+
+router.get('/voice/route-select', rateLimit({ windowMs: 10 * 60e3, limit: 20 }), wrap(async (req, res) => {
+  const excl = String(req.query.exclude || '').split(',').map(s => s.trim()).filter(Boolean);
+  const acct = await pickAccount(excl);
+  if (!acct) return res.json({ available: false, message: 'Our AI voice assistant is at capacity right now. Please use the chat or the booking form instead.' });
+  const baseUrl = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  if (/localhost|127\.0\.0\.1/.test(baseUrl)) console.warn('[voice] APP_URL is not public: Vapi cannot reach the booking tools. Set APP_URL (ngrok URL or your Railway domain).');
+  res.json({ available: true, accountKey: acct.key, publicKey: acct.publicKey, assistant: buildAssistant(baseUrl, acct.key) });
+}));
+router.post('/voice/end-of-call', wrap(async (req, res) => {
+  const key = String(req.body?.accountKey || ''), min = Math.min(30, Math.ceil(+req.body?.minutes || 0));
+  if (ACCTS.some(a => a.key === key) && min > 0) await recordUsage(key, min);
+  res.json({ ok: true });
+}));
+router.post('/voice/webhook', wrap(async (req, res) => {
+  if (process.env.VOICE_SECRET && req.query.k !== process.env.VOICE_SECRET) return res.sendStatus(401);
+  const msg = req.body?.message;
+  if (msg?.type === 'tool-calls') {
+    const calls = msg.toolCallList || msg.toolCalls || [];
+    const results = await Promise.all(calls.map(async c => ({ toolCallId: c.id, result: JSON.stringify(await runTool(c.function?.name || c.name, parseArgs(c.function?.arguments ?? c.arguments))) })));
+    return res.json({ results });
+  }
+  if (msg?.type === 'function-call') { const c = msg.functionCall || {}; return res.json({ result: JSON.stringify(await runTool(c.name, parseArgs(c.parameters ?? c.arguments))) }); }
+  res.json({ ok: true });
+}));
+
+module.exports = router;

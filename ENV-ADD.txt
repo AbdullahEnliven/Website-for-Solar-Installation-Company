@@ -1,0 +1,11 @@
+# Paste these lines into your .env (and into Railway > Variables). Values for the first block: copy from the office project's .env
+GROQ_API_KEY=
+VAPI_PUBLIC_KEY_1=
+VAPI_PUBLIC_KEY_2=
+VAPI_PUBLIC_KEY_3=
+VAPI_MINUTES_LIMIT=30
+
+# Public address of THIS site. Local testing: your ngrok URL (https://xxxx.ngrok-free.dev). Railway: https://your-app.up.railway.app
+APP_URL=
+# Any random text. Stops strangers calling the voice webhook.
+VOICE_SECRET=change-this-random-text

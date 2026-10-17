@@ -1,0 +1,52 @@
+// Book via Message (AI chat) and Book via Call (AI voice). The form option is the existing modal.
+(()=>{
+const q=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const md=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+const post=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(async r=>({ok:r.ok,j:await r.json().catch(()=>({}))}));
+const SERV=['Full solar system','Solar panels only','Battery backup','Inverter upgrade','Maintenance / repair'];
+let hist=[],busy=false,vapi=null,timer=null,tt=null;
+
+function toast(msg){const t=q('#toast');t.innerHTML=esc(msg)+'<br><a data-open="form">Use the booking form →</a>';t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,9000)}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(!o)return;e.preventDefault();
+  q('#choose').hidden=true;q('#toast').hidden=true;const w=o.dataset.open;
+  if(w==='form')q('#modal').hidden=false;else{document.body.style.overflow='';w==='chat'?openChat():startCall()}});
+
+// ---------- chat ----------
+function add(role,text){const d=document.createElement('div');d.className='m '+role;d.innerHTML=md(text);q('#cmsgs').appendChild(d);d.scrollIntoView({block:'end'});return d}
+function openChat(){q('#chat').hidden=false;if(!q('#cmsgs').children.length)add('bot',"Hi! I'm the SolarWave assistant. Ask me about our panels, batteries or installation, or tell me which day you'd like our team to visit.");q('#cin').focus()}
+q('#chatx').onclick=()=>q('#chat').hidden=true;
+q('#cform').onsubmit=async e=>{e.preventDefault();const i=q('#cin'),t=i.value.trim();if(!t||busy)return;i.value='';add('me',t);hist.push({role:'user',content:t});busy=true;const w=add('bot','…');
+  try{const{j}=await post('/api/chat',{messages:hist}),r=j.reply||'Sorry, something went wrong. Please use the booking form.';w.innerHTML=md(r);hist.push({role:'assistant',content:r});if(j.bookingOffer)offer(j.bookingOffer)}
+  catch{w.textContent='Sorry, I could not connect. Please use the booking form.'}
+  busy=false};
+function offer(o){
+  const f=document.createElement('form');f.className='cf';
+  f.innerHTML=`<input name="name" placeholder="Full name" required><input name="phone" type="tel" placeholder="Phone" required><input name="email" type="email" placeholder="Email" required><select name="service">${SERV.map(s=>`<option>${s}</option>`).join('')}</select><input name="address" placeholder="Street address" required><div class="r3"><input name="city" placeholder="City" required><input name="state" maxlength="2" placeholder="TX" required><input name="zip" placeholder="ZIP" required></div><select name="slot"><option value="8am-12pm">Morning · 8am–12pm</option><option value="12pm-4pm">Afternoon · 12pm–4pm</option></select><button>Confirm for ${esc(o.dateFormatted)}</button><p class="msg"></p>`;
+  f.onsubmit=async e=>{e.preventDefault();const b=Object.fromEntries(new FormData(f)),btn=f.querySelector('button');b.date=o.date;btn.disabled=true;
+    const{ok,j}=await post('/api/chat/book',b);
+    if(!ok||!j.ok){f.querySelector('.msg').textContent=j.error||'Could not book. Please try again.';btn.disabled=false;return}
+    f.remove();const t=`You're booked! **${j.dateFormatted}**, ${j.slot}. Reference **${j.ref}**. We will call you within one business day to confirm.`;add('bot',t);hist.push({role:'assistant',content:t})};
+  q('#cmsgs').appendChild(f);f.scrollIntoView({block:'end'})}
+
+// ---------- voice call ----------
+const loadVapi=()=>window.Vapi?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='/js/vendor/vapi.bundle.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+const callUI=(on,txt)=>{q('#callbox').hidden=!on;if(txt)q('#cst').textContent=txt};
+function tick(on){clearInterval(timer);if(on){let s=0;timer=setInterval(()=>{s++;q('#cst').textContent='In call · '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000)}}
+async function startCall(){
+  callUI(true,'Connecting…');q('#cmute').textContent='Mute';const excl=[];
+  try{await loadVapi()}catch{callUI(false);return toast('Could not load the voice assistant. Please use the chat or the form.')}
+  for(let a=0;a<3;a++){let key=null;
+    try{
+      const d=await(await fetch('/api/voice/route-select'+(excl.length?'?exclude='+excl.join(','):''))).json();
+      if(!d.available){callUI(false);return toast(d.message)}
+      key=d.accountKey;vapi=new window.Vapi(d.publicKey);const t0=Date.now();let sent=false;
+      const report=()=>{if(sent)return;sent=true;fetch('/api/voice/end-of-call',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountKey:key,minutes:Math.ceil((Date.now()-t0)/6e4)}),keepalive:true}).catch(()=>{})};
+      vapi.on('call-end',()=>{report();tick(false);callUI(false);vapi=null});
+      await vapi.start(d.assistant);
+      vapi.on('error',()=>{report();tick(false);callUI(false);vapi=null;toast('The call ended unexpectedly. Please use the chat or the booking form.')});
+      tick(true);return;
+    }catch(err){console.error('[voice]',key,err);if(key)excl.push(key)}}
+  callUI(false);toast('Our AI voice assistant is not available right now. Please use the chat or the booking form.')}
+q('#cend').onclick=()=>vapi&&vapi.stop();
+q('#cmute').onclick=()=>{if(!vapi)return;const m=!vapi.isMuted();vapi.setMuted(m);q('#cmute').textContent=m?'Unmute':'Mute'};
+})();
