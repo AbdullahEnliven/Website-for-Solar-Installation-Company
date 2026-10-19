@@ -1,7 +1,7 @@
 window.SITE={name:'SolarWave Energy',phone:'(512) 555-0142',phoneHref:'+15125550142',email:'hello@solarwaveenergy.com',address:'1250 Sunrise Blvd, Suite 300',city:'Austin, TX 78701',hours:'Mon–Sat, 8:00 AM – 6:00 PM',license:'TX Electrical Contractor Lic. #TECL-48213'};
 window.STORY=[
 {pal:['#ffb347','#ffd36e','#ff7a1a'],work:'about',h:['POWER','o','YOUR<br>FUTURE','We design, sell, install and service complete solar systems for homes and businesses across Texas: panels, inverters, batteries and cables.'],
- d:{tag:'ABOUT SOLARWAVE',title:'Clean power, built and installed by one team',intro:'Since 2016 we have made our own solar hardware and installed it ourselves, so there is one company to call from the first survey to the day you switch on.',
+ d:{tag:'ABOUT SOLARWAVE',title:'Clean power, built and installed by our team',intro:'Since 2016 we have made our own solar hardware and installed it ourselves, so there is one company to call from the first survey to the day you switch on.',
  specs:[['4,200+','Systems installed'],['38 MW','Clean capacity delivered'],['10 yrs','In business'],['4.9 / 5','Average customer rating']],
  pts:['One company for equipment, installation and support','Licensed, insured, in-house crews with no subcontractors','Free on-site survey and a written quote','Local service team for repairs and monitoring']}},
 {pal:['#5fa8ff','#ffffff','#7fd0ff'],work:'panels',h:['OUR OWN','g','SOLAR<br>PANELS','Manufactured by us. High-efficiency modules built layer by layer for the sun.'],

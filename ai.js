@@ -239,16 +239,23 @@ router.get('/voice/diag', wrap(async (req, res) => {
   const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
   let db = 'ok';
   try { await pool.query('SELECT 1'); await pool.query('SELECT visit_date, source, fulfillment FROM bookings LIMIT 1'); } catch (e) { db = 'ERROR: ' + e.message; }
+  // Add &test=1 to the URL: every Groq key is tried live, so you see which key is wrong / used up.
+  let groqTest = 'add &test=1 to the URL to test the Groq keys live';
+  if (req.query.test) groqTest = await Promise.all(GROQ_KEYS.map(async (k, i) => { const name = '#' + (i + 1) + ' (ends ' + k.slice(-4) + ')';
+    try { const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: GROQ_MODELS[0], messages: [{ role: 'user', content: 'hi' }], max_tokens: 8 }) });
+      return { key: name, ok: r.ok, status: r.status, detail: r.ok ? 'working' : (await r.text()).slice(0, 200) }; }
+    catch (e) { return { key: name, ok: false, detail: 'cannot reach Groq: ' + e.message }; } }));
   const usage = (await pool.query('SELECT account_key, minutes_used FROM vapi_usage').catch(() => ({ rows: [] }))).rows;
   res.json({
     appUrl: appUrl || '(APP_URL is empty!)',
     appUrlIsPublic: !!appUrl && !/localhost|127\.0\.0\.1/.test(appUrl),
     webhookUrl: `${appUrl}/api/voice/webhook?account=accountN&k=<VOICE_SECRET>`,
     vapiAccountsConfigured: ACCTS.map(a => a.key), vapiMinutesUsed: usage, vapiMinutesLimit: LIMIT,
-    groqKeys: GROQ_KEYS.length, db,
+    groqKeys: GROQ_KEYS.length, db, groqTest,
     howToRead: 'Make a test call, finish it, then refresh this page. No entries = Vapi never reached your server. status 401 = secret mismatch. success:false = see error.',
     recentVoiceEvents: recent
   });
 }));
 
+console.log(`[ai] Groq keys: ${GROQ_KEYS.length} | Vapi accounts: ${ACCTS.length} | APP_URL: ${process.env.APP_URL || '(NOT SET)'} | VOICE_SECRET: ${process.env.VOICE_SECRET ? 'set' : 'NOT SET'}`);
 module.exports = router;

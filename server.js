@@ -26,7 +26,7 @@ app.use(helmet({ contentSecurityPolicy: { directives: {
 app.use(express.json({ limit: '50kb' }));
 app.use(cookieParser());
 app.use('/admin', (_q, res, next) => { res.set('X-Robots-Tag', 'noindex'); res.set('Cache-Control', 'no-store'); next(); });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, f) => { if (/[\\/]images[\\/]/.test(f)) res.set('Cache-Control', 'public, max-age=604800'); } }));
 app.get('/health', (_q, res) => res.send('ok'));
 
 const wrap = fn => (req, res, next) => fn(req, res, next).catch(next);

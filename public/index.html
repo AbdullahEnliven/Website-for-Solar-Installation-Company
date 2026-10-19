@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SolarWave Energy | Solar Panels, Batteries &amp; Installation in Texas</title>
 <meta name="description" content="SolarWave Energy designs, manufactures and installs solar panels, inverters and lithium batteries across Texas. Book your free survey online.">
+<link rel="preload" as="image" href="/images/sections/about.webp?v=4" type="image/webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/gsap.css">
 </head>
 <body>
-<div id="load">BUILDING 100,000 DOTS…</div>
-<canvas id="gl"></canvas>
-<canvas id="sky"></canvas>
+<section id="intro"><canvas id="vapor"></canvas><h1 class="sr">SolarWave</h1></section>
 <header>
   <a class="logo" href="#">SOLAR<b>WAVE</b></a>
   <nav id="nav"><a href="#" data-work="about">About Us</a><a href="#" data-go="1">Panels</a><a href="#" data-go="2">Wires</a><a href="#" data-go="3">Inverters</a><a href="#" data-go="4">Batteries</a><a href="#" data-go="5">Installation</a><a href="#" data-go="6">Warranty</a></nav>
@@ -19,10 +21,6 @@
   <a class="cta" href="#" data-book>Book Now</a>
   <button id="burger" aria-label="Menu">☰</button>
 </header>
-<div id="steps"></div>
-<div id="hint">SCROLL TO EXPLORE ↓</div>
-<section id="intro"><canvas id="vapor"></canvas><h1 class="sr">SolarWave</h1></section>
-<div id="spacer"></div>
 <footer>
   <div class="fg">
     <div><div class="logo">SOLAR<b>WAVE</b></div><p>Solar panels, inverters and lithium batteries, designed, built and installed by one Texas team.</p></div>
@@ -57,13 +55,13 @@
 </form>
 </template>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="/js/content.js"></script>
 <script src="/js/story.js"></script>
 <script src="/js/work.js"></script>
 <script src="/js/main.js"></script>
 <script src="/js/booking-ai.js"></script>
 <script src="/js/vapor.js"></script>
-<script src="/js/sky.js"></script>
 </body>
 </html>

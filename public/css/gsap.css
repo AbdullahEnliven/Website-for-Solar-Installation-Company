@@ -1,0 +1,120 @@
+/* GSAP scroll sections (story.js). Purani canvas/dots animation hata di gayi hai */
+html,body{background:#02030a}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+#sw{position:relative;z-index:2}
+[pathLength]{stroke-dasharray:1}
+/* hero ab sirf intro hai: poori screen par fixed, animation ke baad hat jata hai */
+.hero{position:fixed;inset:0;z-index:5;height:100vh;height:100dvh;display:grid;place-items:center;overflow:hidden}
+body.intro .st{visibility:hidden}
+.hrow .o,.hrow .g,.hsub,.hint{will-change:transform,opacity}
+.hero{will-change:opacity}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:1.5vw;width:88.5vw;margin:0 auto;font-family:"Bebas Neue",Impact,sans-serif;line-height:.9;white-space:nowrap;font-size:clamp(2.6rem,min(11vw,24vh),12rem)} /* text left margin se right margin tak phaila hua: POWER | picture | YOUR FUTURE */
+/* POWER aur YOUR FUTURE: dono ka same filled gradient style */
+.hrow .o,.hrow .g{background:linear-gradient(95deg,#ffd36e,#ff7a1a);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
+.box{flex:none;width:.9em;height:1.1em;border-radius:.3em;background:radial-gradient(circle at 30% 30%,#ffd36e,#ff7a1a);display:grid;place-items:center;will-change:transform}
+.box svg{width:62%;height:62%;fill:none;stroke:#02030a;stroke-width:5;stroke-linecap:round}
+.hsub{position:absolute;bottom:12vh;left:0;right:0;max-width:1100px;margin:0 auto;padding:0 6vw;text-align:center;color:#d6def2;line-height:1.5;font-size:clamp(1rem,min(3vh,4.6vw),1.5rem)}
+.hint{position:absolute;bottom:5vh;left:0;right:0;text-align:center;font-size:.7rem;letter-spacing:3px;opacity:.6}
+.st{position:relative;min-height:100vh;padding:12vh 6vw 8vh;display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center;overflow:hidden}
+.st:nth-of-type(odd) .lc{order:2}
+/* picture upar, stat boxes uski neeche (left/right column mein), baki text dusre column mein */
+.lc{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-content:center;min-width:0}
+.lc .vis{min-width:0;width:100%}
+.lc .specs{margin:0;gap:8px}
+.lc .spec{padding:8px 14px;border-radius:12px}
+.lc .spec b{font-size:1.35rem;line-height:1.1}
+.lc .spec span{font-size:.72rem}
+.cp .tag{margin-top:16px}
+.lc .spec:last-child:nth-child(odd){grid-column:1/-1}
+.vis{display:grid;place-items:center}
+.vis svg{width:min(70%,36vh);fill:none;stroke:var(--c1);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 16px var(--c1))}
+.hd{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;line-height:.92;letter-spacing:1px;font-size:clamp(2.4rem,min(6.2vw,11vh),5.6rem)}
+.hd.s{font-size:clamp(2rem,min(4.6vw,9vh),4.2rem);line-height:1}
+.hd .a.o{color:transparent;-webkit-text-stroke:2px var(--c1)}
+.hd .a.g{color:var(--c1);text-shadow:0 0 40px var(--c1)}
+.hd .b{background:linear-gradient(95deg,var(--c2),var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hl{display:inline-block;margin:16px 0 4px;padding:.25em .7em;background:var(--c1);color:#08090f;font-weight:600;font-size:clamp(.85rem,2.3vh,1.2rem)}
+.lead{color:#cdd7ee;max-width:500px;line-height:1.6;margin-top:12px}
+.cp .specs{margin-top:22px}
+.cp .btn{margin-top:22px}
+@media (max-width:900px),(max-aspect-ratio:11/10){
+ .hrow{display:flex;flex-direction:column;align-items:center;justify-content:center;width:auto;gap:2vh;font-size:clamp(2.4rem,min(18vw,13.5vh),8rem)}
+ .box{width:1.5em;height:.8em}
+ .st{grid-template-columns:1fr;gap:20px;padding:12vh 6vw 8vh}
+ .st:nth-of-type(odd) .lc{order:0}
+ .lc{display:contents}.lc .vis{order:0}.cp{order:1}.lc .specs{order:2}
+ .vis svg{width:min(55%,30vh)}
+ .hd{font-size:clamp(2.2rem,12vw,3.6rem)}.hd.s{font-size:clamp(1.8rem,8vw,2.6rem)}
+}
+
+/* hero box picture */
+.box{position:relative;overflow:hidden}
+.box.has-img{background:none;overflow:visible;border-radius:0;width:1.1em;height:1.1em;backface-visibility:hidden}
+/* globe ki tight square picture: box mein poori aati hai, scale hone par uska circle poori screen dhak leta hai */
+.box .bimg{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.box.has-img .bimg{display:block}
+.box.has-img svg{display:none}
+
+/* section pictures */
+.vis .pimg{display:none;width:100%;height:min(50vh,560px);object-fit:contain;filter:drop-shadow(0 18px 30px rgba(0,0,0,.5))}
+.vis.has-img .pimg{display:block}
+.vis.has-img svg{display:none}
+
+/* section pictures: halka tairna (float) + peeche glow. Float 'translate' property se hota hai taake scroll wale scale/rotate se na takraye */
+.vis{position:relative}
+.vis.has-img::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at 50% 62%,var(--c1),transparent 64%);opacity:.16;animation:pglow 5s ease-in-out infinite alternate;pointer-events:none}
+.vis .pimg{position:relative;z-index:1;will-change:transform,opacity;animation:pfloat 6s ease-in-out infinite}
+.st:nth-of-type(even) .vis .pimg{animation-duration:7s;animation-delay:-2s}
+@keyframes pfloat{0%,100%{translate:0 calc(var(--py,0px) - 7px)}50%{translate:0 calc(var(--py,0px) + 9px)}}
+@keyframes pglow{from{opacity:.1}to{opacity:.26}}
+@media (prefers-reduced-motion:reduce){.vis .pimg,.vis.has-img::before{animation:none}}
+/* mobile: globe box square, halka chhota float, glow kam */
+@media (max-width:900px),(max-aspect-ratio:11/10){
+ .box.has-img{width:2em;height:2em}
+ @keyframes pfloat{0%,100%{translate:0 calc(var(--py,0px) - 4px)}50%{translate:0 calc(var(--py,0px) + 6px)}}
+}
+
+/* ===== MOBILE: har picture ke upar ka faltu khali space khatam ===== */
+@media (max-width:900px),(max-aspect-ratio:11/10){
+ .st{min-height:0;align-items:start;align-content:start;padding:22px 6vw 22px;gap:14px}
+ .st:first-of-type{padding-top:76px}
+ .vis .pimg{width:100%;max-width:420px;height:auto;max-height:40vh;aspect-ratio:auto;object-fit:contain}
+ .vis{min-height:0}
+}
+
+/* ===== picture ek bade rounded box mein, box ko poora bharti hai (photo-card look) ===== */
+.vis.has-img{position:relative;width:100%;height:min(64vh,660px);padding:0;border-radius:34px;overflow:hidden;isolation:isolate;
+ background:
+  radial-gradient(75% 42% at 50% 0%,rgba(255,255,255,.17),transparent 72%),
+  radial-gradient(70% 46% at 50% 104%,rgba(255,255,255,.12),transparent 72%),
+  linear-gradient(172deg,#111a33 0%,#080c1a 58%,#04060e 100%);
+ border:1px solid rgba(255,255,255,.15);
+ box-shadow:0 40px 80px -36px rgba(0,0,0,.95),inset 0 1px 0 rgba(255,255,255,.16),inset 0 -60px 90px -50px rgba(0,0,0,.65)}
+@supports (color:color-mix(in srgb,red,blue)){
+ .vis.has-img{border-color:color-mix(in srgb,var(--c1) 42%,rgba(255,255,255,.12));
+  background:
+   radial-gradient(75% 42% at 50% 0%,rgba(255,255,255,.17),transparent 72%),
+   radial-gradient(75% 52% at 50% 106%,color-mix(in srgb,var(--c1) 55%,transparent),transparent 72%),
+   radial-gradient(60% 40% at 18% 22%,color-mix(in srgb,var(--c2) 22%,transparent),transparent 70%),
+   linear-gradient(172deg,#111a33 0%,#080c1a 58%,#04060e 100%);
+  box-shadow:0 40px 80px -36px rgba(0,0,0,.95),0 0 60px -26px var(--c1),inset 0 1px 0 rgba(255,255,255,.18),inset 0 -60px 90px -50px rgba(0,0,0,.6)}}
+/* halki diagonal chamak (glass shine) */
+.vis.has-img::after{content:'';position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.03) 24%,transparent 42%)}
+/* picture card ke andar poori phailti hai */
+.vis.has-img .pimg{position:absolute;inset:5% 4%;width:92%;height:90%;max-width:none;max-height:none;object-fit:contain;filter:drop-shadow(0 22px 26px rgba(0,0,0,.55))}
+.vis.has-img::before{inset:0;background:radial-gradient(ellipse at 50% 64%,var(--c1),transparent 60%);opacity:.18}
+@media (max-width:900px),(max-aspect-ratio:11/10){
+ .vis.has-img{height:auto;aspect-ratio:5/5.7;max-height:58vh;border-radius:26px}
+}
+
+/* ===== extra animation: hover tilt + float, glare, stat box hover, scroll progress ===== */
+.vis.has-img{transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px));transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .4s;will-change:transform}
+.vis.has-img.hov{--ty:-10px;transition:transform .14s linear,box-shadow .4s,border-color .4s;
+ box-shadow:0 56px 90px -34px rgba(0,0,0,.95),0 0 70px -18px var(--c1),inset 0 1px 0 rgba(255,255,255,.2)}
+.vis.has-img .pimg{transition:scale .5s cubic-bezier(.2,.8,.2,1),filter .5s}
+.vis.has-img.hov .pimg{scale:1.07;filter:drop-shadow(0 34px 36px rgba(0,0,0,.6))}
+.vis.has-img.hov::after{background:radial-gradient(circle at var(--mx,30%) var(--my,12%),rgba(255,255,255,.26),rgba(255,255,255,.05) 34%,transparent 56%)}
+.spec{transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s,background .3s}
+@media (hover:hover){.spec:hover{transform:translateY(-4px);border-color:var(--c1);background:rgba(255,255,255,.09)}}
+#sprog{position:fixed;left:0;top:0;width:100%;height:3px;z-index:70;pointer-events:none;transform-origin:0 50%;transform:scaleX(var(--sp,0));background:linear-gradient(90deg,#ffc247,#ff7a1a,#5fa8ff);box-shadow:0 0 12px rgba(255,160,40,.6)}
+@media (prefers-reduced-motion:reduce){.vis.has-img,.vis.has-img .pimg{transition:none}}
